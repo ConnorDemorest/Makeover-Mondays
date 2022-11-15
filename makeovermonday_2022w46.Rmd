@@ -1,0 +1,53 @@
+---
+title: "Makeover Monday, week 46: Cocaine and Herion prices 1990-2020"
+author: "Connor Demorest"
+date: "2022-11-14"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = F, message = F)
+```
+
+This is my first time doing a Makeover Monday, but I've followed them for a while. I was first introduced in 2019-ish by a blog post written by my undergraduate advisor. I aspired to do them during grad school but I just couldn't find the time to work on them, and then it seems like the creators of Makeover Monday shut down the project for a while in 2021-2022. I was planning on starting from the earliest data sets I could find and working through those once a week over the next six or eight years, but I learned that they started posting more data sets and re-opened the discussion boards. This also can serve as a resurrection of [my blog](https://blog.dataarenotdatais.com/), since I haven't found motivation or energy to post to that in a while - I actually stopped sharing it to people because it was a little embarrassing my most recent post was from 2019, and contains a relatively basic simulation study, a criticism of a free summer program I went to, and part one of an intended two or three part series on my undergraduate project work in baseball. I think I had written reflections on courses I took in undergrad, but they weren't useful or constructive so I removed them. 
+
+This week's Makeover Monday is cocaine and heroin prices from 1990-2020 in Europe and USA, organized as a yearly panel data set. It's not clear exactly how the data are gathered or if the reported prices are correct, but I will make do with what I'm given. The data come from [https://dataunodc.un.org/dp-drug-prices-Europe-USA](https://dataunodc.un.org/dp-drug-prices-Europe-USA).
+
+The original attempt at visualizing these data was the following graphic about wholesale cocaine prices (in USD) from The Economist, which is not great overall, but it is does have some redeeming qualities. This visualization does choose a very nice color ramp that is accessible to pretty much any kind of color blindness, and does show well the vast differences in current wholesale cocaine prices between countries like Colombia and Mexico compared to Australia, Jordan, or Algeria. By my understanding, the majority of cocaine is made in Colombia and other South American countries and exported to the rest of the world, so it is interesting to see the costs of smuggling illegal drugs across the world. 
+
+I don't think this graphic is very successful overall however, because I don't feel like it answers a relevant or interesting question using retail prices, and over half of the map has missing data. Most of Europe looks to me to be the exact same color, which cannot be used to make comparisons between different European countries in this sort of graphic. In addition, there is information about historic prices, wholesale heroin prices, and retail prices per gram for both cocaine and heroin that is not being included in this graphic. 
+
+![Original graphic from The Economist](momwk46original.png)
+
+## My proposed solution
+
+My first thought was an animated map of Europe that cycles through the years and showing the prices with a color aesthetic, but I don't think those are as successful at showing the change over time within a country or the comparisons between different countries (so the two main comparisons of interest in my opinion). Those animated map graphics are best at showing trends across the entire map area (see [https://www.e-education.psu.edu/geog486/node/720](https://www.e-education.psu.edu/geog486/node/720) for an example of what I mean). I think a much more successful graphic would be a line graph showing the trend over time within a country, and animating it to show exact data points when you hover over it. The way I know how to do this is in R with the `plotly` package. 
+
+```{r}
+library(tidyverse)
+library(plotly)
+
+data = readxl::read_excel("Cocaine and Heroin Prices.xlsx") %>% 
+  mutate(Profit = `Retail Price` * 1000 - `Wholesale Price`) %>% 
+  filter(`Retail Price` < 1000)
+
+fig = ggplot(data = data, aes(x = Year, y = `Retail Price`, color = Country)) +
+  geom_line() + 
+  geom_point(size = 0.5) + 
+  geom_hline(yintercept = mean(data$`Retail Price`)) +
+  labs(y = "Retail price ($/gram)") +
+  scale_y_continuous(limits = c(0, NA)) +
+  facet_wrap(~Drug, nrow = 2, scales = "free_y") + 
+  theme_bw()
+
+p = plotly_build(fig) 
+text_y = paste("Overall mean:", p$x$data[[38]]$y %>% round(0))
+p %>% style(text = text_y, traces = 37)
+```
+
+
+
+
+
